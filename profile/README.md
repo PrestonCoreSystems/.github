@@ -4,13 +4,13 @@ Preston Core Systems builds practical software systems for personal productivity
 
 We focus on products that are useful in real life: tools that help people plan better, host faster, understand usage, publish knowledge, and automate the work that should not need repeated manual effort.
 
-## What We Build
+<!-- ## What We Build
 
 - **PromiseOS**: A local-first personal assistant for morning routines, productivity, and growth.
 - **StaticHost**: Cloudflare-first hosting infrastructure for static and edge-deployed applications.
 - **UsagePlane**: Usage tracking and operational insight tools for modern products.
 - **ScribeHarbor**: Writing, transcription, and knowledge workflow software.
-- **FitPlane**: Health and fitness planning tools for sustainable personal routines.
+- **FitPlane**: Health and fitness planning tools for sustainable personal routines. -->
 
 ## Engineering Principles
 
@@ -28,12 +28,12 @@ Our projects commonly use:
 - Native macOS and mobile clients where platform integration matters
 - GitHub Actions and reusable infrastructure workflows
 
-## Active Work
+<!-- ## Active Work
 
-The current focus is **PromiseOS**, a personal assistant and growth system designed to run across macOS, web, mobile, and Cloudflare. It is built around stateful conversations, permission-based memory, local-first privacy, and gentle daily guidance.
+The current focus is **PromiseOS**, a personal assistant and growth system designed to run across macOS, web, mobile, and Cloudflare. It is built around stateful conversations, permission-based memory, local-first privacy, and gentle daily guidance. -->
 
 ## Links
 
-- Website: Coming soon
-- Products: Coming soon
+- [Website](https://prestoncoresystems.com/)
+- Products: [RecordCove](https://recordcove.com/)
 - Contact: Coming soon
