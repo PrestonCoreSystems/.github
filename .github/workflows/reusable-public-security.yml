@@ -1,0 +1,125 @@
+name: Public security scanners
+
+on:
+  workflow_call:
+
+# Public callers need only source read access, including for untrusted forks.
+permissions:
+  contents: read
+
+# Both scanners always use fresh GitHub-hosted runners, with no inherited secrets.
+jobs:
+  gitleaks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require a public caller
+        env:
+          CALLER_PRIVATE: ${{ github.event.repository.private }}
+        run: test "$CALLER_PRIVATE" = 'false'
+      - name: Check out caller source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          path: source
+      - name: Check out immutable public scanner utilities
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: PrestonCoreSystems/.github
+          ref: 291e6ec865eb08e522e7fc04b51124aa58714524
+          persist-credentials: false
+          path: scanner-tools
+      - name: Reject PR scanner policy edits
+        if: github.event_name == 'pull_request'
+        working-directory: source
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash "$GITHUB_WORKSPACE/scanner-tools/scripts/security/check-policy.sh" "$BASE_SHA"
+      - name: Install checksum-verified gitleaks 8.30.1
+        env:
+          TOOL_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+        run: |
+          set -euo pipefail
+          directory=$(mktemp -d "$RUNNER_TEMP/public-gitleaks.XXXXXX")
+          curl --fail --location --proto '=https' --tlsv1.2 --max-time 180 \
+            --output "$directory/tool.tar.gz" 'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz'
+          printf '%s  %s\n' "$TOOL_SHA256" "$directory/tool.tar.gz" | sha256sum --check --status
+          tar --extract --gzip --file "$directory/tool.tar.gz" --directory "$directory" gitleaks
+          chmod 0755 "$directory/gitleaks"
+          printf '%s\n' "$directory" >> "$GITHUB_PATH"
+      - name: Scan current source into a private temporary report
+        id: scan
+        working-directory: source
+        env:
+          REPORT: ${{ runner.temp }}/public-gitleaks-report.json
+        run: |
+          umask 077
+          gitleaks dir --redact --ignore-gitleaks-allow --no-banner --no-color --timeout 120 --exit-code 0 --report-format json --report-path "$REPORT" .
+      - name: Publish counts and enforce findings
+        if: always() && steps.scan.outcome == 'success'
+        env:
+          REPORT: ${{ runner.temp }}/public-gitleaks-report.json
+        run: python3 "$GITHUB_WORKSPACE/scanner-tools/scripts/security/summarize.py" 'gitleaks' "$REPORT"
+      - name: Remove temporary report
+        if: always()
+        env:
+          REPORT: ${{ runner.temp }}/public-gitleaks-report.json
+        run: rm -f -- "$REPORT"
+  trivy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require a public caller
+        env:
+          CALLER_PRIVATE: ${{ github.event.repository.private }}
+        run: test "$CALLER_PRIVATE" = 'false'
+      - name: Check out caller source without persisted credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          path: source
+      - name: Check out immutable public scanner utilities
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: PrestonCoreSystems/.github
+          ref: 291e6ec865eb08e522e7fc04b51124aa58714524
+          persist-credentials: false
+          path: scanner-tools
+      - name: Reject PR scanner policy edits
+        if: github.event_name == 'pull_request'
+        working-directory: source
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash "$GITHUB_WORKSPACE/scanner-tools/scripts/security/check-policy.sh" "$BASE_SHA"
+      - name: Install checksum-verified trivy 0.74.0
+        env:
+          TOOL_SHA256: '2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a'
+        run: |
+          set -euo pipefail
+          directory=$(mktemp -d "$RUNNER_TEMP/public-trivy.XXXXXX")
+          curl --fail --location --proto '=https' --tlsv1.2 --max-time 180 \
+            --output "$directory/tool.tar.gz" 'https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz'
+          printf '%s  %s\n' "$TOOL_SHA256" "$directory/tool.tar.gz" | sha256sum --check --status
+          tar --extract --gzip --file "$directory/tool.tar.gz" --directory "$directory" trivy
+          chmod 0755 "$directory/trivy"
+          printf '%s\n' "$directory" >> "$GITHUB_PATH"
+      - name: Scan current source into a private temporary report
+        id: scan
+        working-directory: source
+        env:
+          REPORT: ${{ runner.temp }}/public-trivy-report.json
+        run: |
+          umask 077
+          trivy fs --quiet --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 --format json --output "$REPORT" .
+      - name: Publish counts and enforce findings
+        if: always() && steps.scan.outcome == 'success'
+        env:
+          REPORT: ${{ runner.temp }}/public-trivy-report.json
+        run: python3 "$GITHUB_WORKSPACE/scanner-tools/scripts/security/summarize.py" 'trivy' "$REPORT"
+      - name: Remove temporary report
+        if: always()
+        env:
+          REPORT: ${{ runner.temp }}/public-trivy-report.json
+        run: rm -f -- "$REPORT"
