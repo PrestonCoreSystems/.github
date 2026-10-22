@@ -1,0 +1,33 @@
+name: Security scanners
+
+# Scan integration changes and refresh vulnerability intelligence weekly.
+on:
+  pull_request:
+    branches: [main, develop, maintenance]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main, develop, maintenance]
+  schedule:
+    - cron: '12 22 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Local reuse lets this public helper validate its own review candidate.
+jobs:
+  security:
+    if: github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.base != null
+    uses: ./.github/workflows/reusable-public-security.yml
+  summary-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out current public source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Exercise privacy and policy boundaries
+        run: |
+          python3 -B scripts/security/test_summarize.py
+          python3 -B scripts/security/test_policy.py
