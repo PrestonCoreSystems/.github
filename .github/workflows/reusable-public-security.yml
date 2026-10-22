@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: PrestonCoreSystems/.github
-          ref: e00d72c3895fb48177cf0b8db9525429f51ace8c
+          ref: 291e6ec865eb08e522e7fc04b51124aa58714524
           persist-credentials: false
           path: scanner-tools
       - name: Reject PR scanner policy edits
@@ -55,7 +55,7 @@ jobs:
           REPORT: ${{ runner.temp }}/public-gitleaks-report.json
         run: |
           umask 077
-          gitleaks dir --redact --no-banner --no-color --timeout 120 --exit-code 0 --report-format json --report-path "$REPORT" .
+          gitleaks dir --redact --ignore-gitleaks-allow --no-banner --no-color --timeout 120 --exit-code 0 --report-format json --report-path "$REPORT" .
       - name: Publish counts and enforce findings
         if: always() && steps.scan.outcome == 'success'
         env:
@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: PrestonCoreSystems/.github
-          ref: e00d72c3895fb48177cf0b8db9525429f51ace8c
+          ref: 291e6ec865eb08e522e7fc04b51124aa58714524
           persist-credentials: false
           path: scanner-tools
       - name: Reject PR scanner policy edits

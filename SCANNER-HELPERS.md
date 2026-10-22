@@ -14,10 +14,12 @@ snippets are uploaded. Invalid or unavailable scans fail instead of claiming cle
 Both jobs always use GitHub-hosted Ubuntu runners and read-only source permissions.
 No secrets or configurable shell inputs are accepted. Forks use the same hosted
 route. PR scanner policy edits are refused and require a separate reviewed policy
-transition. Application deployment, paid scanning and required statuses are outside
+transition. GitLeaks ignores inline allow comments, and newly added inline Trivy
+exclusions are refused. Application deployment, paid scanning and required statuses are outside
 this workflow.
 
 The organization repository validates its candidate through local reusable-workflow
 syntax. Its scanner utility dependency is immutable and separately committed.
-The six focused tests cover private-value omission, unknown reports, finding exits
-and immutable-base policy admission. Actual engines still require source-bound CI.
+The seven focused tests cover private-value omission, unknown reports, finding exits,
+immutable-base policy admission and added inline Trivy exclusions. Actual engines
+still require source-bound CI after a source change.
