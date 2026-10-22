@@ -31,6 +31,19 @@ class PolicyTests(unittest.TestCase):
             result = subprocess.run(['bash', str(SCRIPT), base], cwd=root, capture_output=True)
             self.assertEqual(result.returncode, 1)
 
+    def test_added_inline_trivy_exclusion_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            commands = [['git', 'init'], ['git', '-c', 'user.name=Scanner Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-m', 'fixture']]
+            for command in commands:
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+            base = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+            (root / 'Dockerfile').write_text('#' + 'trivy:' + 'ignore:EXAMPLE\nFROM scratch\n')
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', '-c', 'user.name=Scanner Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'], cwd=root, check=True, capture_output=True)
+            result = subprocess.run(['bash', str(SCRIPT), base], cwd=root, capture_output=True)
+            self.assertEqual(result.returncode, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

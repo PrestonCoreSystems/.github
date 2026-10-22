@@ -12,3 +12,11 @@ if [[ -n "$changed" ]]; then
   printf '%s\n' 'Scanner policy changed in this PR; a separate reviewed policy transition is required.' >&2
   exit 1
 fi
+
+# Inspect added lines without logging source; inline exclusions also change scanner policy.
+directive="trivy:""ignore"
+diff=$(git diff --no-ext-diff --unified=0 "$base" HEAD --)
+if printf '%s\n' "$diff" | awk -v directive="$directive" '/^\+[^+]/ && index($0, directive) { found=1 } END { exit !found }'; then
+  printf '%s\n' 'New inline Trivy exclusions require a separate reviewed policy transition.' >&2
+  exit 1
+fi
